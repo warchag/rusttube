@@ -1266,6 +1266,7 @@ impl RustTubeApp {
 
     fn render_playlist_picker(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         let pal = self.pal;
+        let lang = self.config.language;
         let mut download_clicked = false;
         card_frame(&pal).show(ui, |ui| {
             ui.set_width(ui.available_width());
@@ -1274,18 +1275,26 @@ impl RustTubeApp {
                 let selected_count = info.playlist_entries.iter().filter(|e| e.selected).count();
 
                 ui.horizontal(|ui| {
+                    let hdr = match lang {
+                        AppLanguage::En => format!("Playlist Picker ({selected_count} / {total} selected)"),
+                        AppLanguage::Th => format!("เลือกคลิปในเพลย์ลิสต์ (เลือก {selected_count} / {total} คลิป)"),
+                    };
                     ui.label(
-                        RichText::new(format!("Playlist Picker ({selected_count} / {total} selected)"))
+                        RichText::new(hdr)
                             .size(14.5)
                             .strong()
                             .color(pal.text_primary),
                     );
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        let dl_lbl = match lang {
+                            AppLanguage::En => format!("⬇ Download Selected ({selected_count})"),
+                            AppLanguage::Th => format!("⬇ ดาวน์โหลดที่เลือก ({selected_count})"),
+                        };
                         if ui
                             .add_enabled(
                                 selected_count > 0,
                                 egui::Button::new(
-                                    RichText::new(format!("⬇ Download Selected ({selected_count})"))
+                                    RichText::new(dl_lbl)
                                         .size(12.5)
                                         .strong()
                                         .color(Color32::WHITE),
@@ -1299,9 +1308,11 @@ impl RustTubeApp {
                         }
                         if ui
                             .add(
-                                egui::Button::new(RichText::new("Deselect All").size(12.0))
-                                    .fill(pal.bg_card_alt)
-                                    .rounding(Rounding::same(6.0)),
+                                egui::Button::new(
+                                    RichText::new(t(lang, "Deselect All", "ยกเลิกทั้งหมด")).size(12.0),
+                                )
+                                .fill(pal.bg_card_alt)
+                                .rounding(Rounding::same(6.0)),
                             )
                             .clicked()
                         {
@@ -1311,9 +1322,11 @@ impl RustTubeApp {
                         }
                         if ui
                             .add(
-                                egui::Button::new(RichText::new("Select All").size(12.0))
-                                    .fill(pal.bg_card_alt)
-                                    .rounding(Rounding::same(6.0)),
+                                egui::Button::new(
+                                    RichText::new(t(lang, "Select All", "เลือกทั้งหมด")).size(12.0),
+                                )
+                                .fill(pal.bg_card_alt)
+                                .rounding(Rounding::same(6.0)),
                             )
                             .clicked()
                         {
@@ -1361,23 +1374,24 @@ impl RustTubeApp {
 
     fn render_options_card(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         let pal = self.pal;
+        let lang = self.config.language;
         card_frame(&pal).show(ui, |ui| {
             ui.set_width(ui.available_width());
 
             // Quick Preset Profiles bar
             ui.horizontal_wrapped(|ui| {
                 ui.label(
-                    RichText::new("Quick Presets:")
+                    RichText::new(t(lang, "Quick Presets:", "โปรไฟล์ด่วน:"))
                         .size(12.0)
                         .strong()
                         .color(pal.text_muted),
                 );
                 let presets = [
-                    ("music", "🎵 Music MP3 320k"),
-                    ("iphone", "📱 iPhone MP4 (H.264)"),
-                    ("4k", "🎬 4K Master"),
-                    ("podcast", "🎙 Podcast"),
-                    ("clip", "✂ Quick Clip"),
+                    ("music", t(lang, "🎵 Music MP3 320k", "🎵 เพลง MP3 320k")),
+                    ("iphone", t(lang, "📱 iPhone MP4 (H.264)", "📱 iPhone MP4 (H.264)")),
+                    ("4k", t(lang, "🎬 4K Master", "🎬 4K ชัดสุด")),
+                    ("podcast", t(lang, "🎙 Podcast", "🎙 พอดแคสต์")),
+                    ("clip", t(lang, "✂ Quick Clip", "✂ ตัดเฉพาะช่วง")),
                 ];
                 for (key, label) in presets {
                     if ui
@@ -1402,8 +1416,12 @@ impl RustTubeApp {
             ui.horizontal_wrapped(|ui| {
                 for mode in [MediaMode::Video, MediaMode::Audio] {
                     let selected = self.config.options.mode == mode;
+                    let mode_lbl = match mode {
+                        MediaMode::Video => t(lang, "Video + Audio", "วิดีโอ + เสียง"),
+                        MediaMode::Audio => t(lang, "Audio Only", "เฉพาะเสียง"),
+                    };
                     let btn = egui::Button::new(
-                        RichText::new(mode.label())
+                        RichText::new(mode_lbl)
                             .size(13.0)
                             .strong()
                             .color(if selected {
@@ -1440,7 +1458,11 @@ impl RustTubeApp {
                             self.config.options.video_quality.label().to_string()
                         };
 
-                        ui.label(RichText::new("Quality:").size(12.5).color(pal.text_secondary));
+                        ui.label(
+                            RichText::new(t(lang, "Quality:", "ความละเอียด:"))
+                                .size(12.5)
+                                .color(pal.text_secondary),
+                        );
                         egui::ComboBox::from_id_salt("video_quality")
                             .width(165.0)
                             .selected_text(sel_text)
@@ -1468,7 +1490,11 @@ impl RustTubeApp {
                                 }
                             });
 
-                        ui.label(RichText::new("Format:").size(12.5).color(pal.text_secondary));
+                        ui.label(
+                            RichText::new(t(lang, "Format:", "รูปแบบ:"))
+                                .size(12.5)
+                                .color(pal.text_secondary),
+                        );
                         egui::ComboBox::from_id_salt("video_format")
                             .width(74.0)
                             .selected_text(self.config.options.video_format.label())
@@ -1487,7 +1513,11 @@ impl RustTubeApp {
                                 }
                             });
 
-                        ui.label(RichText::new("Codec:").size(12.5).color(pal.text_secondary));
+                        ui.label(
+                            RichText::new(t(lang, "Codec:", "โค้ดเด็ก:"))
+                                .size(12.5)
+                                .color(pal.text_secondary),
+                        );
                         egui::ComboBox::from_id_salt("video_codec")
                             .width(136.0)
                             .selected_text(self.config.options.video_codec.short_label())
@@ -1507,7 +1537,11 @@ impl RustTubeApp {
                             });
                     }
                     MediaMode::Audio => {
-                        ui.label(RichText::new("Format:").size(12.5).color(pal.text_secondary));
+                        ui.label(
+                            RichText::new(t(lang, "Format:", "รูปแบบ:"))
+                                .size(12.5)
+                                .color(pal.text_secondary),
+                        );
                         egui::ComboBox::from_id_salt("audio_format")
                             .width(85.0)
                             .selected_text(self.config.options.audio_format.label())
@@ -1527,7 +1561,11 @@ impl RustTubeApp {
                             });
 
                         ui.add_space(6.0);
-                        ui.label(RichText::new("Bitrate:").size(12.5).color(pal.text_secondary));
+                        ui.label(
+                            RichText::new(t(lang, "Bitrate:", "คุณภาพเสียง:"))
+                                .size(12.5)
+                                .color(pal.text_secondary),
+                        );
                         egui::ComboBox::from_id_salt("audio_bitrate")
                             .width(148.0)
                             .selected_text(self.config.options.audio_bitrate.label())
@@ -1555,12 +1593,16 @@ impl RustTubeApp {
 
             // Output folder + Pro Options + Download CTA
             ui.horizontal(|ui| {
-                ui.label(RichText::new("Save to:").size(12.5).color(pal.text_secondary));
+                ui.label(
+                    RichText::new(t(lang, "Save to:", "บันทึกไว้ที่:"))
+                        .size(12.5)
+                        .color(pal.text_secondary),
+                );
                 let dir_display = shorten_path(&self.config.options.output_dir, 34);
                 ui.label(RichText::new(dir_display).size(12.5).color(pal.text_primary));
                 if ui
                     .add(
-                        egui::Button::new(RichText::new("Change...").size(12.0))
+                        egui::Button::new(RichText::new(t(lang, "Change...", "เปลี่ยน...")).size(12.0))
                             .fill(pal.bg_card_alt)
                             .stroke(Stroke::new(1.0, pal.border))
                             .rounding(Rounding::same(6.0)),
@@ -1574,7 +1616,7 @@ impl RustTubeApp {
                     if ui
                         .add(
                             egui::Button::new(
-                                RichText::new("⬇  Download Now")
+                                RichText::new(t(lang, "⬇  Download Now", "⬇  เริ่มดาวน์โหลด"))
                                     .size(14.0)
                                     .strong()
                                     .color(Color32::WHITE),
@@ -1591,9 +1633,9 @@ impl RustTubeApp {
                     ui.add_space(8.0);
 
                     let adv_label = if self.show_advanced {
-                        "▲ Pro Options"
+                        t(lang, "▲ Pro Options", "▲ ตัวเลือกเสริม")
                     } else {
-                        "▼ Pro Options"
+                        t(lang, "▼ Pro Options", "▼ ตัวเลือกเสริม")
                     };
                     if ui
                         .add(
@@ -1627,28 +1669,28 @@ impl RustTubeApp {
                             changed |= ui
                                 .checkbox(
                                     &mut self.config.options.embed_thumbnail,
-                                    "Embed Thumbnail",
+                                    t(lang, "Embed Thumbnail", "ฝังรูปปก"),
                                 )
                                 .changed();
                             ui.add_space(10.0);
                             changed |= ui
                                 .checkbox(
                                     &mut self.config.options.embed_metadata,
-                                    "Embed Metadata",
+                                    t(lang, "Embed Metadata", "ฝังข้อมูลเพลง/คลิป"),
                                 )
                                 .changed();
                             ui.add_space(10.0);
                             changed |= ui
                                 .checkbox(
                                     &mut self.config.options.sponsorblock,
-                                    "SponsorBlock (Skip Ads)",
+                                    t(lang, "SponsorBlock (Skip Ads)", "SponsorBlock (ข้ามโฆษณา)"),
                                 )
                                 .changed();
                             ui.add_space(10.0);
                             changed |= ui
                                 .checkbox(
                                     &mut self.config.options.download_playlist,
-                                    "Allow Playlist",
+                                    t(lang, "Allow Playlist", "รองรับเพลย์ลิสต์"),
                                 )
                                 .changed();
                         });
@@ -1659,7 +1701,7 @@ impl RustTubeApp {
                             changed |= ui
                                 .checkbox(
                                     &mut self.config.options.download_subtitles,
-                                    "Subtitles:",
+                                    t(lang, "Subtitles:", "ซับไตเติล:"),
                                 )
                                 .changed();
                             ui.add_enabled_ui(self.config.options.download_subtitles, |ui| {
@@ -1677,7 +1719,10 @@ impl RustTubeApp {
                             ui.add_space(16.0);
 
                             changed |= ui
-                                .checkbox(&mut self.config.options.trim_enabled, "Clip Range:")
+                                .checkbox(
+                                    &mut self.config.options.trim_enabled,
+                                    t(lang, "Clip Range:", "ตัดช่วงเวลา:"),
+                                )
                                 .changed();
                             ui.add_enabled_ui(self.config.options.trim_enabled, |ui| {
                                 changed |= ui
@@ -1689,7 +1734,11 @@ impl RustTubeApp {
                                         .hint_text("00:00"),
                                     )
                                     .changed();
-                                ui.label(RichText::new("to").size(12.0).color(pal.text_muted));
+                                ui.label(
+                                    RichText::new(t(lang, "to", "ถึง"))
+                                        .size(12.0)
+                                        .color(pal.text_muted),
+                                );
                                 changed |= ui
                                     .add_sized(
                                         [66.0, 24.0],
@@ -1706,7 +1755,7 @@ impl RustTubeApp {
 
                         ui.horizontal_wrapped(|ui| {
                             ui.label(
-                                RichText::new("Speed Limit:")
+                                RichText::new(t(lang, "Speed Limit:", "จำกัดความเร็ว:"))
                                     .size(12.5)
                                     .color(pal.text_secondary),
                             );
@@ -1731,7 +1780,7 @@ impl RustTubeApp {
                             ui.add_space(16.0);
 
                             ui.label(
-                                RichText::new("Browser Cookies:")
+                                RichText::new(t(lang, "Browser Cookies:", "Cookie เบราว์เซอร์:"))
                                     .size(12.5)
                                     .color(pal.text_secondary),
                             );
@@ -1764,9 +1813,14 @@ impl RustTubeApp {
 
     fn render_queue_section(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         let pal = self.pal;
+        let lang = self.config.language;
         ui.horizontal(|ui| {
+            let q_title = match lang {
+                AppLanguage::En => format!("Download Queue ({})", self.tasks.len()),
+                AppLanguage::Th => format!("คิวดาวน์โหลด ({})", self.tasks.len()),
+            };
             ui.label(
-                RichText::new(format!("Download Queue ({})", self.tasks.len()))
+                RichText::new(q_title)
                     .size(16.0)
                     .strong()
                     .color(pal.text_primary),
@@ -1782,7 +1836,7 @@ impl RustTubeApp {
                     && ui
                         .add(
                             egui::Button::new(
-                                RichText::new("Clear Finished")
+                                RichText::new(t(lang, "Clear Finished", "ล้างรายการที่เสร็จ"))
                                     .size(12.0)
                                     .color(pal.text_secondary),
                             )
@@ -1810,16 +1864,20 @@ impl RustTubeApp {
                 ui.vertical_centered(|ui| {
                     ui.add_space(20.0);
                     ui.label(
-                        RichText::new("No active downloads")
+                        RichText::new(t(lang, "No active downloads", "ยังไม่มีรายการดาวน์โหลด"))
                             .size(15.0)
                             .strong()
                             .color(pal.text_secondary),
                     );
                     ui.add_space(4.0);
                     ui.label(
-                        RichText::new("Paste a YouTube URL above or enable Clipboard Watch to begin.")
-                            .size(12.5)
-                            .color(pal.text_muted),
+                        RichText::new(t(
+                            lang,
+                            "Paste a YouTube URL above or enable Clipboard Watch to begin.",
+                            "วางลิงก์ YouTube ด้านบน หรือเปิดโหมดจับลิงก์อัตโนมัติเพื่อเริ่มดาวน์โหลด",
+                        ))
+                        .size(12.5)
+                        .color(pal.text_muted),
                     );
                     ui.add_space(20.0);
                 });
@@ -1966,15 +2024,23 @@ impl RustTubeApp {
 
                 ui.horizontal(|ui| match &task.status {
                     TaskStatus::Queued => {
-                        ui.label(RichText::new("⏳ Queued...").size(12.0).color(pal.text_muted));
+                        ui.label(
+                            RichText::new(t(lang, "⏳ Queued...", "⏳ รอคิว..."))
+                                .size(12.0)
+                                .color(pal.text_muted),
+                        );
                     }
                     TaskStatus::Downloading => {
                         if task.progress <= 0.001 {
                             ui.label(
-                                RichText::new("🔄 Connecting & preparing stream...")
-                                    .size(12.0)
-                                    .strong()
-                                    .color(pal.accent),
+                                RichText::new(t(
+                                    lang,
+                                    "🔄 Connecting & preparing stream...",
+                                    "🔄 กำลังเชื่อมต่อและเตรียมไฟล์...",
+                                ))
+                                .size(12.0)
+                                .strong()
+                                .color(pal.accent),
                             );
                         } else {
                             pill_badge(
@@ -2003,7 +2069,7 @@ impl RustTubeApp {
                     }
                     TaskStatus::Completed => {
                         ui.label(
-                            RichText::new("✔ Completed")
+                            RichText::new(t(lang, "✔ Completed", "✔ ดาวน์โหลดเสร็จสิ้น"))
                                 .size(12.0)
                                 .strong()
                                 .color(pal.green),
@@ -2019,10 +2085,18 @@ impl RustTubeApp {
                         }
                     }
                     TaskStatus::Failed(err) => {
-                        ui.label(RichText::new(format!("✖ Failed: {err}")).size(12.0).color(pal.red));
+                        ui.label(
+                            RichText::new(format!("{}: {err}", t(lang, "✖ Failed", "✖ ล้มเหลว")))
+                                .size(12.0)
+                                .color(pal.red),
+                        );
                     }
                     TaskStatus::Cancelled => {
-                        ui.label(RichText::new("Cancelled").size(12.0).color(pal.text_muted));
+                        ui.label(
+                            RichText::new(t(lang, "Cancelled", "ยกเลิกแล้ว"))
+                                .size(12.0)
+                                .color(pal.text_muted),
+                        );
                     }
                 });
             });
@@ -2047,19 +2121,22 @@ impl RustTubeApp {
 
     fn render_tools_tab(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         let pal = self.pal;
+        let lang = self.config.language;
         egui::ScrollArea::vertical()
             .auto_shrink([false; 2])
             .show(ui, |ui| {
                 ui.label(
-                    RichText::new("FFmpeg Media Tools")
+                    RichText::new(t(lang, "FFmpeg Media Tools", "เครื่องมือแปลงและตัดต่อไฟล์ (FFmpeg)"))
                         .size(22.0)
                         .strong()
                         .color(pal.text_primary),
                 );
                 ui.label(
-                    RichText::new(
+                    RichText::new(t(
+                        lang,
                         "Convert formats, compress heavy videos, trim clips, or extract audio locally.",
-                    )
+                        "แปลงนามสกุล บีบอัดลดขนาดวิดีโอ ตัดช่วงเวลา หรือแยกเสียงออกจากไฟล์ในเครื่องได้ทันที",
+                    ))
                     .size(12.5)
                     .color(pal.text_secondary),
                 );
@@ -2071,7 +2148,7 @@ impl RustTubeApp {
                     ui.horizontal(|ui| {
                         ui.vertical(|ui| {
                             ui.label(
-                                RichText::new("Source Media File")
+                                RichText::new(t(lang, "Source Media File", "ไฟล์ต้นฉบับ"))
                                     .size(14.0)
                                     .strong()
                                     .color(pal.text_primary),
@@ -2091,9 +2168,13 @@ impl RustTubeApp {
                                 );
                             } else {
                                 ui.label(
-                                    RichText::new("Drag & drop any video/audio file here, or click Choose File")
-                                        .size(12.5)
-                                        .color(pal.text_muted),
+                                    RichText::new(t(
+                                        lang,
+                                        "Drag & drop any video/audio file here, or click Choose File",
+                                        "ลากไฟล์วิดีโอ/เสียงมาวางในหน้าต่างนี้ หรือกดปุ่มเลือกไฟล์",
+                                    ))
+                                    .size(12.5)
+                                    .color(pal.text_muted),
                                 );
                             }
                         });
@@ -2102,7 +2183,7 @@ impl RustTubeApp {
                             if ui
                                 .add(
                                     egui::Button::new(
-                                        RichText::new("📂 Choose File")
+                                        RichText::new(t(lang, "📂 Choose File", "📂 เลือกไฟล์"))
                                             .size(13.0)
                                             .color(Color32::WHITE),
                                     )
@@ -2135,10 +2216,16 @@ impl RustTubeApp {
                     ui.horizontal_wrapped(|ui| {
                         for mode in MediaToolMode::ALL {
                             let selected = self.media_tool.mode == *mode;
+                            let m_label = match mode {
+                                MediaToolMode::Convert => t(lang, "🔄 Convert Format", "🔄 แปลงนามสกุล"),
+                                MediaToolMode::Compress => t(lang, "🗜 Compress Video", "🗜 บีบอัดวิดีโอ"),
+                                MediaToolMode::Trim => t(lang, "✂ Trim / Cut", "✂ ตัดช่วงเวลา"),
+                                MediaToolMode::ExtractAudio => t(lang, "🎵 Extract Audio", "🎵 แยกเสียง"),
+                            };
                             if ui
                                 .add(
                                     egui::Button::new(
-                                        RichText::new(mode.label())
+                                        RichText::new(m_label)
                                             .size(13.0)
                                             .strong()
                                             .color(if selected {
@@ -2399,9 +2486,10 @@ impl RustTubeApp {
 
     fn render_history_tab(&mut self, ui: &mut egui::Ui) {
         let pal = self.pal;
+        let lang = self.config.language;
         ui.horizontal(|ui| {
             ui.label(
-                RichText::new("Download History")
+                RichText::new(t(lang, "Download History", "ประวัติการดาวน์โหลด"))
                     .size(22.0)
                     .strong()
                     .color(pal.text_primary),
@@ -2411,7 +2499,9 @@ impl RustTubeApp {
                     && ui
                         .add(
                             egui::Button::new(
-                                RichText::new("🗑 Clear History").size(12.5).color(pal.red),
+                                RichText::new(t(lang, "🗑 Clear History", "🗑 ล้างประวัติ"))
+                                    .size(12.5)
+                                    .color(pal.red),
                             )
                             .fill(pal.red_soft)
                             .rounding(Rounding::same(8.0)),
@@ -2432,16 +2522,20 @@ impl RustTubeApp {
                 ui.vertical_centered(|ui| {
                     ui.add_space(36.0);
                     ui.label(
-                        RichText::new("No completed downloads yet")
+                        RichText::new(t(lang, "No completed downloads yet", "ยังไม่มีประวัติการดาวน์โหลด"))
                             .size(15.0)
                             .strong()
                             .color(pal.text_secondary),
                     );
                     ui.add_space(4.0);
                     ui.label(
-                        RichText::new("Your finished videos and audio files will appear here.")
-                            .size(12.5)
-                            .color(pal.text_muted),
+                        RichText::new(t(
+                            lang,
+                            "Your finished videos and audio files will appear here.",
+                            "ไฟล์วิดีโอและเสียงที่ดาวน์โหลดเสร็จแล้วจะแสดงที่นี่",
+                        ))
+                        .size(12.5)
+                        .color(pal.text_muted),
                     );
                     ui.add_space(36.0);
                 });
@@ -2543,32 +2637,80 @@ impl RustTubeApp {
 
     fn render_settings_tab(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         let pal = self.pal;
+        let lang = self.config.language;
         let mut theme_changed = false;
 
         egui::ScrollArea::vertical()
             .auto_shrink([false; 2])
             .show(ui, |ui| {
                 ui.label(
-                    RichText::new("Settings & Engine Logs")
+                    RichText::new(t(lang, "Settings & Engine Logs", "ตั้งค่า & บันทึกการทำงาน"))
                         .size(22.0)
                         .strong()
                         .color(pal.text_primary),
                 );
                 ui.add_space(14.0);
 
+                // Language Selector Card
+                card_frame(&pal).show(ui, |ui| {
+                    ui.set_width(ui.available_width());
+                    ui.horizontal(|ui| {
+                        ui.label(
+                            RichText::new(t(lang, "🌐 Language / ภาษา", "🌐 ภาษา / Language"))
+                                .size(15.0)
+                                .strong()
+                                .color(pal.text_primary),
+                        );
+                        ui.add_space(14.0);
+                        for l in [AppLanguage::Th, AppLanguage::En] {
+                            let selected = self.config.language == l;
+                            if ui
+                                .add(
+                                    egui::Button::new(
+                                        RichText::new(l.label()).size(13.0).strong().color(
+                                            if selected {
+                                                Color32::WHITE
+                                            } else {
+                                                pal.text_primary
+                                            },
+                                        ),
+                                    )
+                                    .min_size(Vec2::new(92.0, 32.0))
+                                    .fill(if selected { pal.accent } else { pal.bg_card_alt })
+                                    .stroke(Stroke::new(
+                                        1.0,
+                                        if selected { pal.accent } else { pal.border },
+                                    ))
+                                    .rounding(Rounding::same(8.0)),
+                                )
+                                .clicked()
+                            {
+                                self.config.language = l;
+                                config::save_config(&self.config);
+                            }
+                        }
+                    });
+                });
+
+                ui.add_space(14.0);
+
                 // Appearance & Theme Gallery Card
                 card_frame(&pal).show(ui, |ui| {
                     ui.set_width(ui.available_width());
                     ui.label(
-                        RichText::new("🎨 Appearance & Themes")
+                        RichText::new(t(lang, "🎨 Appearance & Themes", "🎨 ธีมและสีของแอป"))
                             .size(15.5)
                             .strong()
                             .color(pal.text_primary),
                     );
                     ui.label(
-                        RichText::new("Pick a curated studio theme and optional accent color.")
-                            .size(12.0)
-                            .color(pal.text_muted),
+                        RichText::new(t(
+                            lang,
+                            "Pick a curated studio theme and optional accent color.",
+                            "เลือกธีมที่ชอบและปรับแต่งสีหลักของปุ่มได้ตามต้องการ",
+                        ))
+                        .size(12.0)
+                        .color(pal.text_muted),
                     );
                     ui.add_space(12.0);
 
@@ -2706,7 +2848,7 @@ impl RustTubeApp {
                 card_frame(&pal).show(ui, |ui| {
                     ui.set_width(ui.available_width());
                     ui.label(
-                        RichText::new("General Preferences")
+                        RichText::new(t(lang, "General Preferences", "การตั้งค่าทั่วไป"))
                             .size(15.0)
                             .strong()
                             .color(pal.text_primary),
@@ -2717,9 +2859,13 @@ impl RustTubeApp {
 
                     ui.horizontal(|ui| {
                         ui.label(
-                            RichText::new("Simultaneous Downloads:")
-                                .size(13.0)
-                                .color(pal.text_secondary),
+                            RichText::new(t(
+                                lang,
+                                "Simultaneous Downloads:",
+                                "จำนวนดาวน์โหลดพร้อมกัน:",
+                            ))
+                            .size(13.0)
+                            .color(pal.text_secondary),
                         );
                         changed |= ui
                             .add(egui::Slider::new(&mut self.config.max_concurrent, 1..=4))
@@ -2730,26 +2876,38 @@ impl RustTubeApp {
                     changed |= ui
                         .checkbox(
                             &mut self.config.auto_fetch_on_paste,
-                            "Automatically fetch video info when clicking Paste",
+                            t(
+                                lang,
+                                "Automatically fetch video info when clicking Paste",
+                                "ดึงข้อมูลวิดีโออัตโนมัติเมื่อกดปุ่มวางลิงก์",
+                            ),
                         )
                         .changed();
                     changed |= ui
                         .checkbox(
                             &mut self.config.clipboard_watch,
-                            "Auto-watch clipboard for YouTube URLs",
+                            t(
+                                lang,
+                                "Auto-watch clipboard for YouTube URLs",
+                                "ตรวจจับลิงก์ YouTube จาก Clipboard อัตโนมัติ",
+                            ),
                         )
                         .changed();
                     changed |= ui
                         .checkbox(
                             &mut self.config.notify_on_complete,
-                            "Show macOS Notification with sound when finished",
+                            t(
+                                lang,
+                                "Show macOS Notification with sound when finished",
+                                "แจ้งเตือนผ่าน macOS พร้อมเสียงเมื่อดาวน์โหลดเสร็จ",
+                            ),
                         )
                         .changed();
 
                     ui.add_space(8.0);
                     ui.horizontal(|ui| {
                         ui.label(
-                            RichText::new("Filename Template:")
+                            RichText::new(t(lang, "Filename Template:", "รูปแบบชื่อไฟล์:"))
                                 .size(13.0)
                                 .color(pal.text_secondary),
                         );
@@ -2775,7 +2933,7 @@ impl RustTubeApp {
                     ui.set_width(ui.available_width());
                     ui.horizontal(|ui| {
                         ui.label(
-                            RichText::new("System Dependencies")
+                            RichText::new(t(lang, "System Dependencies", "เครื่องมือในระบบ"))
                                 .size(15.0)
                                 .strong()
                                 .color(pal.text_primary),
@@ -2783,10 +2941,13 @@ impl RustTubeApp {
                         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                             if ui
                                 .add(
-                                    egui::Button::new(RichText::new("↻ Re-check").size(12.0))
-                                        .fill(pal.bg_card_alt)
-                                        .stroke(Stroke::new(1.0, pal.border))
-                                        .rounding(Rounding::same(6.0)),
+                                    egui::Button::new(
+                                        RichText::new(t(lang, "↻ Re-check", "↻ ตรวจสอบใหม่"))
+                                            .size(12.0),
+                                    )
+                                    .fill(pal.bg_card_alt)
+                                    .stroke(Stroke::new(1.0, pal.border))
+                                    .rounding(Rounding::same(6.0)),
                                 )
                                 .clicked()
                             {
@@ -2800,9 +2961,9 @@ impl RustTubeApp {
                             }
 
                             let update_label = if self.updating_ytdlp {
-                                "⏳ Updating yt-dlp..."
+                                t(lang, "⏳ Updating yt-dlp...", "⏳ กำลังอัปเดต yt-dlp...")
                             } else {
-                                "⬆ Update yt-dlp"
+                                t(lang, "⬆ Update yt-dlp", "⬆ อัปเดต yt-dlp")
                             };
                             let has_ytdlp = self
                                 .deps
